@@ -1,7 +1,7 @@
 '''
 created:31-08-2020
 Author:https://github.com/bernard0047
-'''
+'''pri
 import os
 import shutil
 import pandas as pd
@@ -17,7 +17,7 @@ def get_parser():
     parser.add_argument('--output_dir', default="./images/", help='a folder containing train and test folders will be created here') #don't pass for easy training
     args = parser.parse_args()
     return args
-
+print
 def label_check(label):
     if len(label)< 8:
         return 0
