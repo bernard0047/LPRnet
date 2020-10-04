@@ -266,7 +266,7 @@ def Greedy_Decode_Eval(Net, datasets, args):
                 no_repeat_blank_label.append(c)
                 pre_c = c
             preb_labels.append(no_repeat_blank_label)
-        for i, label in enumerate(preb_labels):
+        for i , label in enumerate(preb_labels):
             if len(label) != len(targets[i]):
                 Tn_1 += 1
                 continue
