@@ -54,6 +54,11 @@ class LPRNet(nn.Module):
             # nn.ReLU(),
             # nn.Conv2d(in_channels=self.class_num, out_channels=self.lpr_max_len+1, kernel_size=3, stride=2),
             # nn.ReLU(),
+            
+            #Edit for hacktoberfest'20
+            #Swarup Basak
+            print("Hacktoberfest20 pull request challenge")
+            print(self)
         )
 
     def forward(self, x):
