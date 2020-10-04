@@ -1,6 +1,10 @@
 import torch.nn as nn
 import torch
 
+#ADD these details
+#Hacktoberfest2020
+print("Hello CCS");
+
 class small_basic_block(nn.Module):
     def __init__(self, ch_in, ch_out):
         super(small_basic_block, self).__init__()
