@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 # /usr/bin/env/python3
-
+#what is the diff between python and java
+# i have tried both but it gets awakward sometimes--yeh it is fine 
 '''
 test pretrained model.
 '''
