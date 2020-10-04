@@ -11,7 +11,9 @@ Indian Number Plate Recognition Modification.
 - imutils
 - Pillow
 - numpy
-
+# bhai itna kuch 
+#challo it is good
+#really interesting
 ### Tasks
 
 - [x] Dataset preprocessor for csv label format. 
