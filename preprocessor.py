@@ -11,6 +11,8 @@ from PIL import Image
 import argparse
 import re
 
+# Saksham
+
 def get_parser():
     parser = argparse.ArgumentParser(description='parameters for dataset preprocessing')
     parser.add_argument('--input_dir', default="./IMAGES3/", help='Input path (contains imgfolder and label csv)')
