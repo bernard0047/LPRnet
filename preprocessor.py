@@ -10,6 +10,9 @@ import cv2 as cv
 from PIL import Image
 import argparse
 import re
+%matplotlib inline
+import matplotlib.pyplot as plt
+# matplotlib library for data analysis.
 
 def get_parser():
     parser = argparse.ArgumentParser(description='parameters for dataset preprocessing')
