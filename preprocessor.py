@@ -10,7 +10,7 @@ import cv2 as cv
 from PIL import Image
 import argparse
 import re
-
+# PranjalArora
 def get_parser():
     parser = argparse.ArgumentParser(description='parameters for dataset preprocessing')
     parser.add_argument('--input_dir', default="./IMAGES3/", help='Input path (contains imgfolder and label csv)')
