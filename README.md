@@ -4,6 +4,7 @@ Pytorch Implementation For LPRNet, A High Performance And Lightweight License Pl
 Indian Number Plate Recognition Modification.
 
 ### Dependencies
+#Added dependencies
 
 - pytorch >= 1.0.0
 - opencv-python 3.x
