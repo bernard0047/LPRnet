@@ -5,7 +5,7 @@
 Pytorch implementation for LPRNet.
 Author: aiboy.wei@outlook.com .
 '''
-
+#Hello I am Deepankar
 from data.load_data import CHARS, CHARS_DICT, LPRDataLoader
 from model.LPRNet import build_lprnet
 from PIL import Image
