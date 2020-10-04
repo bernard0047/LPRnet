@@ -1,6 +1,6 @@
 ## LPRNet Pytorch
 Pytorch Implementation For LPRNet, A High Performance And Lightweight License Plate Recognition Framework.(Chinese Number Plates Recognition)
-
+## sajal gururani
 Indian Number Plate Recognition Modification.
 
 ### Dependencies
