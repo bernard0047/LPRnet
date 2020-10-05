@@ -4,6 +4,20 @@ import numpy as np
 import random
 import cv2
 import os
+from Tkinter import *
+from time import strftime
+
+root = Tk()
+
+time_var = StringVar()
+
+def set_time():
+    time_var.set(strftime('%H:%M:%S'))
+    root.after(1000, set_time)
+
+Label(root, bd=11, textvariable=time_var).pack()
+set_time()
+root.mainloop()
 
 CHARS = [
          '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
