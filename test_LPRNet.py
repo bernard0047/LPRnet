@@ -4,6 +4,7 @@
 '''
 test pretrained model.
 '''
+Hello sir
 
 from data.load_data import CHARS, CHARS_DICT, LPRDataLoader
 from PIL import Image, ImageDraw, ImageFont
