@@ -10,6 +10,8 @@ import cv2 as cv
 from PIL import Image
 import argparse
 import re
+#RAMESH KUMAR
+print("HELLO GUYS, LET US MAKE AN INTERSTING PROGRAM")
 
 def get_parser():
     parser = argparse.ArgumentParser(description='parameters for dataset preprocessing')
