@@ -13,9 +13,9 @@ from torch.autograd import Variable
 import torch.nn.functional as F
 from torch.utils.data import *
 from torch import optim
-import torch.nn as nn
+import torch.nn as nn #python by muskan
 import numpy as np
-import argparse
+import argparse #trying to win the shirt
 import torch
 import time
 import cv2
@@ -33,6 +33,7 @@ def get_parser():
     parser.add_argument('--cuda', default=True, type=bool, help='Use cuda to train model')
     parser.add_argument('--show', default=False, type=bool, help='show test image and its predict result or not.')
     parser.add_argument('--pretrained_model', default='./weights/Final_LPRNet_model.pth', help='pretrained base model')
+    
 
     args = parser.parse_args()
 
