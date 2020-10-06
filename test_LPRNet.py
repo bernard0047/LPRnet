@@ -4,7 +4,7 @@
 '''
 test pretrained model.
 '''
-
+#Martinkaushal
 from data.load_data import CHARS, CHARS_DICT, LPRDataLoader
 from PIL import Image, ImageDraw, ImageFont
 from model.LPRNet import build_lprnet
