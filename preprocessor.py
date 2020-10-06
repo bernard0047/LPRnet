@@ -10,6 +10,7 @@ import cv2 as cv
 from PIL import Image
 import argparse
 import re
+#This code is in python
 
 def get_parser():
     parser = argparse.ArgumentParser(description='parameters for dataset preprocessing')
