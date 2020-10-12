@@ -2,7 +2,7 @@
 created:31-08-2020
 Author:https://github.com/bernard0047
 '''
-import os
+import os                        #these are import commands
 import shutil
 import pandas as pd
 import numpy as np
