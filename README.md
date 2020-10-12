@@ -1,9 +1,9 @@
-## LPRNet Pytorch
+# LPRNet Pytorch
 Pytorch Implementation For LPRNet, A High Performance And Lightweight License Plate Recognition Framework.(Chinese Number Plates Recognition)
 
 Indian Number Plate Recognition Modification.
 
-### Dependencies
+## Dependencies
 
 - pytorch >= 1.0.0
 - opencv-python 3.x
@@ -18,7 +18,7 @@ Indian Number Plate Recognition Modification.
 - [x] Added robustness to preprocessor. 
 - [ ] Tune hyperparameters.
 
-### Dataset preprocessing
+#### Dataset preprocessing
 
 1. Image name should be its label and separated into test and train. Otherwise:
 2. Preprocessor.py will split data into train and test (9:1) and rename labels.
@@ -31,7 +31,7 @@ Indian Number Plate Recognition Modification.
 | xyz.png  | KA00XX0000 |
 
 
-### Training and Testing
+##### Training and Testing
 
 1. Uncomment get_size function calls in train() to train with median size of dataset, default size is 94,24. Edit: Model only works for 94,24 size right now.
 2. Based on your dataset path modify the script and its hyperparameters.
@@ -40,7 +40,7 @@ Indian Number Plate Recognition Modification.
 5. If want to show testing result, add '--show true' or '--show 1' to run command.
 
 
-### References
+###### References
 
 1. [LPRNet: License Plate Recognition via Deep Neural Networks](https://arxiv.org/abs/1806.10447v1)
 2. [PyTorch中文文档](https://pytorch-cn.readthedocs.io/zh/latest/)
