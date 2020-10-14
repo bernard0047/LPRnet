@@ -30,7 +30,7 @@ Indian Number Plate Recognition Modification.
 | :----: | :----: |
 | xyz.png  | KA00XX0000 |
 
-
+#sukanyawattal
 ### Training and Testing
 
 1. Uncomment get_size function calls in train() to train with median size of dataset, default size is 94,24. Edit: Model only works for 94,24 size right now.
