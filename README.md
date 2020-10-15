@@ -25,7 +25,6 @@ Indian Number Plate Recognition Modification.
 3. Run preprocessor.py and pass input folder, required format:
 4. Input folder to contain 2 items, a folder containing all images and a csv/excel file of labels.
 5. Csv should look like:
-
 | img name | Label |
 | :----: | :----: |
 | xyz.png  | KA00XX0000 |
