@@ -35,6 +35,7 @@ def adjust_learning_rate(optimizer, cur_epoch, base_lr, lr_schedule):
     """
     Sets the learning rate
     """
+    
     lr = 0
     for i, e in enumerate(lr_schedule):
         if cur_epoch < e:
@@ -49,13 +50,13 @@ def adjust_learning_rate(optimizer, cur_epoch, base_lr, lr_schedule):
 
 def get_parser():
     parser = argparse.ArgumentParser(description='parameters to train net')
-    parser.add_argument('--max_epoch', default=15, help='epoch to train the network')
+    parser.add_argument('--max_epoch', default=10, help='epoch to train the network')
     parser.add_argument('--img_size', default=(94, 24), help='the image size')
-    parser.add_argument('--train_img_dirs', default="./images/train", help='the train images path')
-    parser.add_argument('--test_img_dirs', default="./images/test", help='the test images path')
+    parser.add_argument('--train_img_dirs', default="./images_1/train", help='the train images path')
+    parser.add_argument('--test_img_dirs', default="./images_1/train", help='the test images path')
     parser.add_argument('--dropout_rate', default=0.5, help='dropout rate.')
-    parser.add_argument('--learning_rate', default=0.1, help='base value of learning rate.')
-    parser.add_argument('--lpr_max_len', default=15, help='license plate number max length.')
+    parser.add_argument('--learning_rate', default=0.001, help='base value of learning rate.')
+    parser.add_argument('--lpr_max_len', default=10, help='license plate number max length.')
     parser.add_argument('--train_batch_size', default=64, help='training batch size.')
     parser.add_argument('--test_batch_size', default=64, help='testing batch size.')
     parser.add_argument('--phase_train', default=True, type=bool, help='train or test phase flag.')
@@ -66,7 +67,8 @@ def get_parser():
     parser.add_argument('--test_interval', default=2000, type=int, help='interval for evaluate')
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
     parser.add_argument('--weight_decay', default=2e-5, type=float, help='Weight decay for SGD')
-    parser.add_argument('--lr_schedule', default=[4, 8, 12, 14, 16], help='schedule for learning rate.')
+    #parser.add_argument('--lr_schedule', default=[4, 8, 12, 14, 16], help='schedule for learning rate.')
+    parser.add_argument('--lr_schedule', default=[50, 70, 90, 100, 120], help='schedule for learning rate.')
     parser.add_argument('--save_folder', default='./weights/', help='Location to save checkpoint models')
     # parser.add_argument('--pretrained_model', default='./weights/Final_LPRNet_model.pth', help='pretrained base model')
     parser.add_argument('--pretrained_model', default='', help='pretrained base model')
@@ -126,7 +128,7 @@ def train():
         print("load pretrained model successful!")
     else:
         def xavier(param):
-            nn.init.xavier_uniform(param)
+            nn.init.xavier_uniform(param) 
 
         def weights_init(m):
             for key in m.state_dict():
@@ -145,8 +147,10 @@ def train():
     # define optimizer
     # optimizer = optim.SGD(lprnet.parameters(), lr=args.learning_rate,
     #                       momentum=args.momentum, weight_decay=args.weight_decay)
-    optimizer = optim.RMSprop(lprnet.parameters(), lr=args.learning_rate, alpha = 0.9, eps=1e-08,
-                         momentum=args.momentum, weight_decay=args.weight_decay)
+    # optimizer = optim.RMSprop(lprnet.parameters(), lr=args.learning_rate, alpha = 0.9, eps=1e-08,
+    #                      momentum=args.momentum, weight_decay=args.weight_decay)
+    optimizer = optim.Adam(lprnet.parameters(), lr=args.learning_rate, betas = [0.9, 0.999], eps=1e-08,
+                         weight_decay=args.weight_decay)
     train_img_dirs = os.path.expanduser(args.train_img_dirs)
     test_img_dirs = os.path.expanduser(args.test_img_dirs)
     #train_imgsize = get_size(train_img_dirs)
@@ -172,7 +176,7 @@ def train():
             epoch += 1
 
         if iteration !=0 and iteration % args.save_interval == 0:
-            torch.save(lprnet.state_dict(), args.save_folder + 'LPRNet_' + '_iteration_' + repr(iteration) + '.pth')
+            torch.save(lprnet.state_dict(), args.save_folder + 'LPRNet_' + '_epoch_' + repr(epoch) + '_iteration_' + repr(iteration) + '.pth')
 
         if (iteration + 1) % args.test_interval == 0:
             Greedy_Decode_Eval(lprnet, test_dataset, args)
@@ -227,6 +231,10 @@ def Greedy_Decode_Eval(Net, datasets, args):
     Tp = 0
     Tn_1 = 0
     Tn_2 = 0
+    t_chars = 0
+    T_c = 0
+    T_f = 0
+    res_chars = np.zeros(len(CHARS))
     t1 = time.time()
     for i in range(epoch_size):
         # load train data
@@ -267,19 +275,41 @@ def Greedy_Decode_Eval(Net, datasets, args):
                 pre_c = c
             preb_labels.append(no_repeat_blank_label)
         for i, label in enumerate(preb_labels):
+            t_chars+=len(targets[i])
+            for j in range(len(label)):
+                if j>=len(targets[i]):
+                    continue
+                if label[j] == targets[i][j]:
+                    res_chars[label[j]]+=1
+                    T_c+=1
             if len(label) != len(targets[i]):
                 Tn_1 += 1
                 continue
+            fuzzy = 0
+            for x in range(len(label)):
+                if targets[i][x]==label[x]:
+                    fuzzy += 1
+                if fuzzy/len(label) >= 0.75:
+                    T_f += 1
             if (np.asarray(targets[i]) == np.asarray(label)).all():
+                #print(label,"<--->",targets[i])
                 Tp += 1
             else:
                 Tn_2 += 1
 
     Acc = Tp * 1.0 / (Tp + Tn_1 + Tn_2)
     print("[Info] Test Accuracy: {} [{}:{}:{}:{}]".format(Acc, Tp, Tn_1, Tn_2, (Tp+Tn_1+Tn_2)))
+    print(f"[Info] 75%+ Accuracy: {T_f/(Tp+Tn_1+Tn_2)} [{T_f}/{(Tp+Tn_1+Tn_2)}]")
     t2 = time.time()
+    print(f'[Info] Char Accuracy:{T_c/t_chars} [{T_c}/{t_chars}] ')
+    # print('Per char: ')
+    # for i in range(10):
+    #     print(i,": ",res_chars[i]/T_c)
+    # for i in range(10,len(CHARS)-1):
+    #     print(chr(55+i),': ',res_chars[i]/T_c)
     print("[Info] Test Speed: {}s 1/{}]".format((t2 - t1) / len(datasets), len(datasets)))
 
 
 if __name__ == "__main__":
+    #print(get_size('./images/train'),get_size('./images/test'))
     train()
