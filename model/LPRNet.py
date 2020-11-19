@@ -24,7 +24,7 @@ class LPRNet(nn.Module):
         self.lpr_max_len = lpr_max_len
         self.class_num = class_num
         self.backbone = nn.Sequential(
-            nn.Conv2d(in_channels=1, out_channels=64, kernel_size=3, stride=1), # 0
+            nn.Conv2d(in_channels=3, out_channels=64, kernel_size=3, stride=1), # 0
             nn.BatchNorm2d(num_features=64),
             nn.ReLU(),  # 2
             nn.MaxPool3d(kernel_size=(1, 3, 3), stride=(1, 1, 1)),
@@ -80,7 +80,7 @@ class LPRNet(nn.Module):
 
         return logits
 
-def build_lprnet(lpr_max_len=15, phase=False, class_num=36, dropout_rate=0.5):
+def build_lprnet(lpr_max_len=11, phase=False, class_num=36, dropout_rate=0.5):
 
     Net = LPRNet(lpr_max_len, phase, class_num, dropout_rate)
 
