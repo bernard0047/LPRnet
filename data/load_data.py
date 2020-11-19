@@ -9,7 +9,7 @@ CHARS = [
          '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
          'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J',
          'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T',
-         'U', 'V', 'W', 'X', 'Y', 'Z'
+         'U', 'V', 'W', 'X', 'Y', 'Z','-'
          ]
 
 CHARS_DICT = {char:i for i, char in enumerate(CHARS)}
@@ -34,45 +34,33 @@ class LPRDataLoader(Dataset):
 
     def __getitem__(self, index):
         filename = self.img_paths[index]
-        try:
-            Image = cv2.imread(filename)
-            height, width, _ = Image.shape
+        Image = cv2.imread(filename)
+        height, width, _ = Image.shape
+        if height != self.img_size[1] or width != self.img_size[0]:
             Image = cv2.resize(Image, self.img_size)
-            Image = self.PreprocFun(Image)
-            basename = os.path.basename(filename)
-            imgname, suffix = os.path.splitext(basename)
-            imgname = ''.join(e for e in imgname if e.isalnum())
-            label = list()
-            for c in imgname:
-                c = c.upper()
-                # one_hot_base = np.zeros(len(CHARS))
-                # one_hot_base[CHARS_DICT[c]] = 1
-                label.append(CHARS_DICT[c])
-            if self.check(label) == False:
-                print(imgname)
-                assert 0, "Error label ^~^!!!"
+        Image = self.PreprocFun(Image)
 
-            return Image, label, len(label)
-        except:
-            print("Error in image: ",filename)
-            print("deleting: ")
-            #os.remove(filename)
+        basename = os.path.basename(filename)
+        imgname, _ = os.path.splitext(basename)
+        imgname = imgname.split("-")[0].split("_")[0]
+        label = list()
+        for c in imgname:
+            c = c.upper()
+            # one_hot_base = np.zeros(len(CHARS))
+            # one_hot_base[CHARS_DICT[c]] = 1
+            label.append(CHARS_DICT[c])
+        label_length = len(label)
+        if label_length<9 and index!=len(self.img_paths)-1:
+            Image, label, label_length, filename = self.__getitem__(index+1)
+        return Image, label, label_length, filename
             
     
     def transform(self, img):
         img = img.astype('float32')
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        #img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         img -= 127.5
         img *= 0.0078125
         #thresh, img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY)
-        img = np.reshape(img, img.shape + (1,))
+        #img = np.reshape(img, img.shape + (1,))
         img = np.transpose(img, (2, 0, 1))
         return img
-
-    def check(self, label):
-        if len(label)<4:
-            print("Error label, Please check!")
-            return False
-        else:
-            return True
-
