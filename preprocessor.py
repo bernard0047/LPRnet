@@ -10,11 +10,14 @@ import cv2 as cv
 from PIL import Image
 import argparse
 import re
+from tqdm import tqdm
 
 def get_parser():
     parser = argparse.ArgumentParser(description='parameters for dataset preprocessing')
-    parser.add_argument('--input_dir', default="./IMAGES3/", help='Input path (contains imgfolder and label csv)')
-    parser.add_argument('--output_dir', default="./images/", help='a folder containing train and test folders will be created here') #don't pass for easy training
+    parser.add_argument('--input_dir', default="./IMAGES1/", help='Input path (contains imgfolder and label csv)')
+    parser.add_argument('--resize', default=False,type=bool, help='resize images to 94,24')
+    parser.add_argument('--output_dir', default="./1line/", help='a folder containing train and test folders will be created here') #don't pass for easy training
+    parser.add_argument('--verbose',default=False,type=bool,help='Set to true for verbose')
     args = parser.parse_args()
     return args
 
@@ -41,8 +44,10 @@ def size_check(ipath):
     height = img.shape[0]
     width = img.shape[1]
     #print(height,width)
-    if height<24 or width<90:
+    if width<65 and height<15:
         return 0
+    # if width/height<2.5:
+    #     return 0
     return 1
 
 
@@ -55,7 +60,6 @@ def preprocess():
         return
     else:
         os.mkdir(odr)
-    #print(input_dir,output_dir)
     imgfolder,dfpath = None, None
     for item in os.listdir(idr):
         if os.path.isdir(os.path.join(idr,item)):
@@ -70,7 +74,7 @@ def preprocess():
     allFileNames = os.listdir(imgfolder)
     np.random.shuffle(allFileNames)
     train_FileNames, test_FileNames = np.split(np.array(allFileNames),
-                                                            [int(len(allFileNames)*0.9)])
+                                                            [int(len(allFileNames)*1)])
     print('Total images: ', len(allFileNames))
     print('Training: ', len(train_FileNames))
     print('Testing: ', len(test_FileNames))
@@ -78,32 +82,64 @@ def preprocess():
     test_FileNames = [imgfolder+'/' + name for name in test_FileNames.tolist()]
     os.makedirs(odr +'/train')
     os.makedirs(odr +'/test')
-    for name in train_FileNames:
+    print("Copying train:")
+    for name in tqdm(train_FileNames):
         shutil.copy(name, odr+"/train")
-    for name in test_FileNames:
+    print("Copying test:")
+    for name in tqdm(test_FileNames):
         shutil.copy(name, odr+"/test")
     count=0
     for dirs in os.listdir(odr):
-        for img in os.listdir(os.path.join(odr+dirs)):
+        print(f"Preprocessing {dirs}")
+        for img in tqdm(os.listdir(os.path.join(odr+dirs))):
             ipath = os.path.join(odr,dirs,img)
-            img,_ = os.path.splitext(img) #uncomment this line if your dataset has imgname without label and modify to accomodate imgname of type(int)
+            #img,_ = os.path.splitext(img) #uncomment this line if your dataset has imgname without extension(.png) and modify to accomodate imgname of type(int)
             _,ext = os.path.splitext(ipath)
-            label = df[df.iloc[:,0]==img].iloc[0,1]
+            try:
+                label = df[df.iloc[:,0]==img].iloc[0,1]
+            except:
+                count+=1
+                os.remove(ipath)
+                continue
+            label = label.replace('/0','')
             label = ''.join(e for e in label if e.isalnum())
             if img not in df.iloc[:,0].tolist() or label_check(label)==0 or size_check(ipath)==0:
                 count+=1
-                print(f"Image not found/ Image too small Label error: Discarding image:{img}")
+                if args.verbose:
+                    print(f"Image not found/ Image too small Label error: Discarding image:{img}")
                 os.remove(ipath)
                 continue
+
+            if args.resize:
+                im = Image.open(ipath)
+                imResize = im.resize((94,24), Image.ANTIALIAS)
+
             tpath = os.path.join(odr,dirs,label+ext)
             if os.path.exists(tpath):
                 if os.path.getsize(tpath)>os.path.getsize(ipath):
                     os.remove(ipath)
                 else :
-                    os.remove(tpath)
-                    os.rename(ipath,tpath)
+                    if args.resize:
+                        os.remove(tpath)
+                        os.remove(ipath)
+                        if tpath[:-3]=='png':
+                            imResize.save(ipath, 'PNG', quality=100)
+                        else:
+                            imResize.save(ipath, 'JPEG', quality=100)
+                    else:
+                        os.remove(tpath)
+                        os.rename(ipath,tpath)
                 count+=1
-                print(f"Discarding duplicate image:{img}")
+                if args.verbose:
+                    print(f"Discarding duplicate image:{img}")
+                continue
+
+            if args.resize:
+                os.remove(ipath)
+                if tpath[:-3]=='png':                                        
+                    imResize.save(tpath, 'PNG', quality=100)
+                else:
+                    imResize.save(tpath, 'JPEG', quality=100)
                 continue
 
             os.rename(ipath,tpath)
