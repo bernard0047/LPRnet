@@ -50,13 +50,13 @@ def adjust_learning_rate(optimizer, cur_epoch, base_lr, lr_schedule):
 
 def get_parser():
     parser = argparse.ArgumentParser(description='parameters to train net')
-    parser.add_argument('--max_epoch', default=10, help='epoch to train the network')
+    parser.add_argument('--max_epoch', default=40, help='epoch to train the network')
     parser.add_argument('--img_size', default=(94, 24), help='the image size')
-    parser.add_argument('--train_img_dirs', default="./images_1/train", help='the train images path')
-    parser.add_argument('--test_img_dirs', default="./images_1/train", help='the test images path')
+    parser.add_argument('--train_img_dirs', default="./images_2/train", help='the train images path')
+    parser.add_argument('--test_img_dirs', default="./images_2/test", help='the test images path')
     parser.add_argument('--dropout_rate', default=0.5, help='dropout rate.')
     parser.add_argument('--learning_rate', default=0.001, help='base value of learning rate.')
-    parser.add_argument('--lpr_max_len', default=10, help='license plate number max length.')
+    parser.add_argument('--lpr_max_len', default=12, help='license plate number max length.')
     parser.add_argument('--train_batch_size', default=64, help='training batch size.')
     parser.add_argument('--test_batch_size', default=64, help='testing batch size.')
     parser.add_argument('--phase_train', default=True, type=bool, help='train or test phase flag.')
@@ -64,14 +64,14 @@ def get_parser():
     parser.add_argument('--cuda', default=True, type=bool, help='Use cuda to train model')
     parser.add_argument('--resume_epoch', default=0, type=int, help='resume iter for retraining')
     parser.add_argument('--save_interval', default=2000, type=int, help='interval for save model state dict')
-    parser.add_argument('--test_interval', default=2000, type=int, help='interval for evaluate')
+    parser.add_argument('--test_interval', default=1000, type=int, help='interval for evaluate')
     parser.add_argument('--momentum', default=0.9, type=float, help='momentum')
     parser.add_argument('--weight_decay', default=2e-5, type=float, help='Weight decay for SGD')
     #parser.add_argument('--lr_schedule', default=[4, 8, 12, 14, 16], help='schedule for learning rate.')
-    parser.add_argument('--lr_schedule', default=[50, 70, 90, 100, 120], help='schedule for learning rate.')
+    parser.add_argument('--lr_schedule', default=[3, 20, 30, 41, 50], help='schedule for learning rate.')
     parser.add_argument('--save_folder', default='./weights/', help='Location to save checkpoint models')
     # parser.add_argument('--pretrained_model', default='./weights/Final_LPRNet_model.pth', help='pretrained base model')
-    parser.add_argument('--pretrained_model', default='', help='pretrained base model')
+    parser.add_argument('--pretrained_model', default='./weights/curr.pth', help='pretrained base model')
 
     args = parser.parse_args()
 
@@ -81,14 +81,16 @@ def collate_fn(batch):
     imgs = []
     labels = []
     lengths = []
+    filenames = []
     for _, sample in enumerate(batch):
-        img, label, length = sample
+        img, label, length, filename = sample
         imgs.append(torch.from_numpy(img))
         labels.extend(label)
         lengths.append(length)
+        filenames.append(filename)
     labels = np.asarray(labels).flatten().astype(np.int)
 
-    return (torch.stack(imgs, 0), torch.from_numpy(labels), lengths)
+    return (torch.stack(imgs, 0), torch.from_numpy(labels), lengths, filenames)
 
 def get_size(imgpath):
     shapeslist=[]
@@ -108,6 +110,7 @@ def get_size(imgpath):
     return((img_h,img_w))
 
 def train():
+    GLOBAL_LOSS = np.inf
     args = get_parser()
 
     T_length = 18 # args.lpr_max_len
@@ -179,15 +182,18 @@ def train():
             torch.save(lprnet.state_dict(), args.save_folder + 'LPRNet_' + '_epoch_' + repr(epoch) + '_iteration_' + repr(iteration) + '.pth')
 
         if (iteration + 1) % args.test_interval == 0:
-            Greedy_Decode_Eval(lprnet, test_dataset, args)
+            testnet = lprnet.eval()
+            Greedy_Decode_Eval(testnet, test_dataset, args)
             # lprnet.train() # should be switch to train mode
 
         start_time = time.time()
         # load train data
-        images, labels, lengths = next(batch_iterator)
+        images, labels, lengths, _ = next(batch_iterator)
         # labels = np.array([el.numpy() for el in labels]).T
         # get ctc parameters
+        #print(T_length, lengths)
         input_lengths, target_lengths = sparse_tuple_for_ctc(T_length, lengths)
+        #print(input_lengths,target_lengths)
         # update lr
         lr = adjust_learning_rate(optimizer, epoch, args.learning_rate, args.lr_schedule)
 
@@ -216,12 +222,21 @@ def train():
             print('Epoch:' + repr(epoch) + ' || epochiter: ' + repr(iteration % epoch_size) + '/' + repr(epoch_size)
                   + '|| Totel iter ' + repr(iteration) + ' || Loss: %.4f||' % (loss.item()) +
                   'Batch time: %.4f sec. ||' % (end_time - start_time) + 'LR: %.8f' % (lr))
+            
+        if loss.item() < GLOBAL_LOSS:
+            GLOBAL_LOSS = loss.item()
+            torch.save(lprnet.state_dict(), args.save_folder+f"Min_loss({round(loss.item(),4)})_model.pth")
+    
+    # save final parameters
+    save_path = args.save_folder + 'Final_LPRNet_model.pth'
+    torch.save(lprnet.state_dict(), save_path)
+    lprnet_eval = build_lprnet(lpr_max_len=args.lpr_max_len, phase=args.phase_train, class_num=len(CHARS), dropout_rate=args.dropout_rate)
+    lprnet_eval.to(device)
+    lprnet_eval.load_state_dict(torch.load(save_path))
+
     # final test
     print("Final test Accuracy:")
-    Greedy_Decode_Eval(lprnet, test_dataset, args)
-
-    # save final parameters
-    torch.save(lprnet.state_dict(), args.save_folder + 'Final_LPRNet_model.pth')
+    Greedy_Decode_Eval(lprnet_eval, test_dataset, args)
 
 def Greedy_Decode_Eval(Net, datasets, args):
     # TestNet = Net.eval()
@@ -238,7 +253,7 @@ def Greedy_Decode_Eval(Net, datasets, args):
     t1 = time.time()
     for i in range(epoch_size):
         # load train data
-        images, labels, lengths = next(batch_iterator)
+        images, labels, lengths, _ = next(batch_iterator)
         start = 0
         targets = []
         for length in lengths:
@@ -289,8 +304,8 @@ def Greedy_Decode_Eval(Net, datasets, args):
             for x in range(len(label)):
                 if targets[i][x]==label[x]:
                     fuzzy += 1
-                if fuzzy/len(label) >= 0.75:
-                    T_f += 1
+            if fuzzy/len(label) >= 0.75:
+                T_f += 1
             if (np.asarray(targets[i]) == np.asarray(label)).all():
                 #print(label,"<--->",targets[i])
                 Tp += 1
@@ -311,5 +326,4 @@ def Greedy_Decode_Eval(Net, datasets, args):
 
 
 if __name__ == "__main__":
-    #print(get_size('./images/train'),get_size('./images/test'))
     train()
