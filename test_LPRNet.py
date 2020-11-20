@@ -27,7 +27,7 @@ import os
 def get_parser():
     parser = argparse.ArgumentParser(description='parameters to train net')
     parser.add_argument('--img_size', default=(94, 24), help='the image size')
-    parser.add_argument('--test_img_dirs', default="./images_1/train", help='the test images path')
+    parser.add_argument('--test_img_dirs', default="./1line/train", help='the test images path')
     parser.add_argument('--dropout_rate', default=0, help='dropout rate.')
     parser.add_argument('--lpr_max_len', default=15, help='license plate number max length.')
     parser.add_argument('--test_batch_size', default=64, help='testing batch size.')
@@ -35,7 +35,10 @@ def get_parser():
     parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
     parser.add_argument('--cuda', default=True, type=bool, help='Use cuda to train model')
     parser.add_argument('--show', default=False, type=bool, help='show test image and its predict result or not.')
-    parser.add_argument('--pretrained_model', default='./weights/topmodel.pth', help='pretrained base model')
+    parser.add_argument('--savepreds', default=False, type=bool, help='save incorrect testpreds with original label to ./testpreds')
+    parser.add_argument('--evaluate', default=True, type=bool, help='Find confusion matrix and classification report and save results')
+    parser.add_argument('--pretrained_model', default='./weights/toppermodel0.15.pth', help='pretrained base model')
+    parser.add_argument('--postprocess', default=True, type=bool, help='Apply postprocessing steps')
 
     args = parser.parse_args()
 
@@ -51,6 +54,7 @@ def collate_fn(batch):
         imgs.append(torch.from_numpy(img))
         labels.extend(label)
         lengths.append(length)
+        filenames.append(filename)
     labels = np.asarray(labels).flatten().astype(np.float32)
 
     return (torch.stack(imgs, 0), torch.from_numpy(labels), lengths, filenames)
@@ -137,14 +141,17 @@ def Greedy_Decode_Eval(Net, datasets, args):
     
 
         for i, label in enumerate(preb_labels):
+            if args.postprocess:
+                label = postprocess(label)
+            correct=False
             X=i
-            # lb = ""
-            # tg = ""
-            # for j in targets[i]:
-            #     x = int(j)
-            #     tg+= CHARS[x]
-            # for j in label:
-            #     lb += CHARS[j]
+            lb = ""
+            tg = ""
+            for j in targets[i]:
+                x = int(j)
+                tg+= CHARS[x]
+            for j in label:
+                lb += CHARS[j]
 
             # show image and its predict label
             t_chars+=len(targets[i])
@@ -176,16 +183,20 @@ def Greedy_Decode_Eval(Net, datasets, args):
                 if fuzzy/len(label) >= 0.75:
                     T_f += 1
                 if (np.asarray(targets[i]) == np.asarray(label)).all():
-                    #print(label,"<--->",targets[i])
                     Tp += 1
+                    correct=True
                 else:
                     Tn_2 += 1
             # print(lb,tg)
-            # if not os.path.isdir('./0labelpreds'):
-            #     os.makedirs('./0labelpreds')
-            # rename = '0labelpreds/'+filenames[X].split('\\')[1].split('.')[0]+"__"+lb+'.png'
-            # shutil.copy(filenames[X],rename)
-    evaluate_and_save(c_matrix)
+            if args.savepreds:
+                if not os.path.isdir('./testpreds'):
+                    os.makedirs('./testpreds')
+                    os.makedirs('./testpreds/images')
+                newname = 'testpreds/images/'+filenames[X].split('\\')[1].split('.')[0]+"__"+lb+'.png'
+                if not correct:
+                    shutil.copy(filenames[X],newname)
+    if args.evaluate:
+        evaluate_and_save(c_matrix)
 
             
     Acc = Tp * 1.0 / (Tp + Tn_1 + Tn_2)
@@ -194,6 +205,7 @@ def Greedy_Decode_Eval(Net, datasets, args):
     t2 = time.time()
     print(f'[Info] Global Char Accuracy:{T_c/t_chars} [{T_c}/{t_chars}] ')
     print(f'[Info] Char Accuracy on full length match:{T_fc/t_fchars} [{T_fc}/{t_fchars}] ')
+    print(f"Length accuracy: {(Tp+Tn_2)/(Tp+Tn_1+Tn_2)}")
     # print('Per char: ')
     # for i in range(10):
     #     print(i,": ",res_chars[i]/T_c)
@@ -210,10 +222,12 @@ def cmatrix(matrix,label,target):
     return matrix
 
 def evaluate_and_save(matrix):
+    if not os.path.isdir('./testpreds'):
+        os.makedirs('./testpreds')
     df = pd.DataFrame(matrix)
     df['index'] = CHARS[:-1]
     df.set_index('index',drop=True,inplace=True)
-    df.to_csv("confusion_matrix_traindata.csv",header=CHARS[:-1])
+    df.to_csv("./testpreds/confusion_matrix.csv",header=CHARS[:-1])
     y_true = []
     y_pred = []
     for i in range(len(matrix)):
@@ -222,9 +236,22 @@ def evaluate_and_save(matrix):
                 y_true.append(j)
                 y_pred.append(i)
     report = classification_report(y_true, y_pred, target_names=CHARS[:-1], output_dict=True)
-    pd.DataFrame(report).transpose().to_csv('Cls_report_traindata.csv')
+    pd.DataFrame(report).transpose().to_csv('./testpreds/Cls_reports.csv')
 
-
+def postprocess(label):
+    if len(label)!=10:
+        return label
+    lb = ''
+    for j in label:
+        x = int(j)
+        lb+= CHARS[x]
+    
+    newlb = correct(lb)
+    label = []
+    for ch in newlb:
+        label.append(CHARS.index(ch))
+    return label
+    
 
 def show(img, label, target):
     img = np.transpose(img, (1, 2, 0))
@@ -258,6 +285,29 @@ def cv2ImgAddText(img, text, pos, textColor=(255, 0, 0), textSize=12):
 
     return cv2.cvtColor(np.asarray(img), cv2.COLOR_RGB2BGR)
 
+def correct(lb):
+    return lb
+    if lb[:2]=='DL':
+        return lb
+    abc = lb[:2]+lb[4:6]
+    num = lb[2:4]+lb[6:10]
+    num.replace('D','0')
+    alphabet = ['A','B','D','I','O']
+
+    if 'A' in num:
+        num = num.replace('A','4')
+    if 'B' in num:
+        num = num.replace('B','8')
+    if 'O' in num or 'D' in num:
+        num = num.replace('O','0')
+        num = num.replace('D','0')
+    if 'I' in num:
+        num = num.replace('I','1')
+    
+    if '4' in abc:
+        abc = abc.replace('4','A')
+    newlb = abc[:2]+num[:2]+abc[2:4]+num[2:]
+    return newlb     
 
 if __name__ == "__main__":
     test()
