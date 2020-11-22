@@ -7,13 +7,15 @@ test pretrained model.
 
 from data.load_data import CHARS, CHARS_DICT, LPRDataLoader
 from sklearn.metrics import classification_report
+from nltk.metrics.distance import edit_distance
 from PIL import Image, ImageDraw, ImageFont
-from model.LPRNet import build_lprnet
 # import torch.backends.cudnn as cudnn
+from model.LPRNet import build_lprnet
 from torch.autograd import Variable
 import torch.nn.functional as F
 from torch.utils.data import *
 from torch import optim
+from csv import writer
 import torch.nn as nn
 import pandas as pd
 import numpy as np
@@ -27,18 +29,19 @@ import os
 def get_parser():
     parser = argparse.ArgumentParser(description='parameters to train net')
     parser.add_argument('--img_size', default=(94, 24), help='the image size')
-    parser.add_argument('--test_img_dirs', default="./1line/train", help='the test images path')
+    parser.add_argument('--test_img_dirs', default="./images", help='the test images path')
     parser.add_argument('--dropout_rate', default=0, help='dropout rate.')
-    parser.add_argument('--lpr_max_len', default=15, help='license plate number max length.')
+    parser.add_argument('--lpr_max_len', default=13, help='license plate number max length.')
     parser.add_argument('--test_batch_size', default=64, help='testing batch size.')
     parser.add_argument('--phase_train', default=False, type=bool, help='train or test phase flag.')
     parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
     parser.add_argument('--cuda', default=True, type=bool, help='Use cuda to train model')
     parser.add_argument('--show', default=False, type=bool, help='show test image and its predict result or not.')
-    parser.add_argument('--savepreds', default=False, type=bool, help='save incorrect testpreds with original label to ./testpreds')
-    parser.add_argument('--evaluate', default=True, type=bool, help='Find confusion matrix and classification report and save results')
-    parser.add_argument('--pretrained_model', default='./weights/toppermodel0.15.pth', help='pretrained base model')
-    parser.add_argument('--postprocess', default=True, type=bool, help='Apply postprocessing steps')
+    parser.add_argument('--save_pred_images', default=False, type=bool, help='save testpreds with original label to ./testpreds')
+    parser.add_argument('--save_pred_results', default=True, type=bool, help='save preds to preds.csv')
+    parser.add_argument('--evaluate', default=False, type=bool, help='Find confusion matrix and classification report and save results')
+    parser.add_argument('--pretrained_model', default='./weights/lprnet_weights0.15.pth', help='pretrained base model')
+    parser.add_argument('--postprocess', default=False, type=bool, help='Apply postprocessing steps')
 
     args = parser.parse_args()
 
@@ -77,10 +80,10 @@ def test():
 
     test_img_dirs = os.path.expanduser(args.test_img_dirs)
     test_dataset = LPRDataLoader(test_img_dirs.split(','), args.img_size, args.lpr_max_len)
-    try:
-        Greedy_Decode_Eval(lprnet, test_dataset, args)
-    finally:
-        cv2.destroyAllWindows()
+    
+    Greedy_Decode_Eval(lprnet, test_dataset, args)
+    # finally:
+    #     cv2.destroyAllWindows()
 
 def Greedy_Decode_Eval(Net, datasets, args):
     # TestNet = Net.eval()
@@ -96,8 +99,10 @@ def Greedy_Decode_Eval(Net, datasets, args):
     T_f = 0
     T_fc = 0
     t_fchars = 0
+    norm_ed = 0
     res_chars = np.zeros(len(CHARS))
     t1 = time.time()
+    count=0
     for i in range(epoch_size):
         # load train data
         images, labels, lengths, filenames = next(batch_iterator)
@@ -152,6 +157,12 @@ def Greedy_Decode_Eval(Net, datasets, args):
                 tg+= CHARS[x]
             for j in label:
                 lb += CHARS[j]
+            if len(lb)==0 or len(tg)==0:
+                pass
+            elif len(tg)>len(lb):
+                norm_ed += 1 - edit_distance(lb,tg)/len(tg)
+            else:
+                norm_ed += 1 - edit_distance(lb,tg)/len(lb)
 
             # show image and its predict label
             t_chars+=len(targets[i])
@@ -188,13 +199,23 @@ def Greedy_Decode_Eval(Net, datasets, args):
                 else:
                     Tn_2 += 1
             # print(lb,tg)
-            if args.savepreds:
+            if args.save_pred_results:
+                if not os.path.isdir('./testpreds'):
+                    os.makedirs('./testpreds')
+                with open("./testpreds/preds.csv",'a+',newline='') as f:
+                    l1 = [filenames[X].split('\\')[1],lb]
+                    csv_writer = writer(f)
+                    csv_writer.writerow(l1)
+                f.close
+            if args.save_pred_images:
                 if not os.path.isdir('./testpreds'):
                     os.makedirs('./testpreds')
                     os.makedirs('./testpreds/images')
-                newname = 'testpreds/images/'+filenames[X].split('\\')[1].split('.')[0]+"__"+lb+'.png'
-                if not correct:
-                    shutil.copy(filenames[X],newname)
+                #newname = 'testpreds/images/'+filenames[X].split('\\')[1].split('.')[0]+"__"+lb+'.png'
+                newname = 'testpreds/images/'+ f'{count}_' + lb + '.png'
+                count+=1
+                #if not correct:
+                shutil.copy(filenames[X],newname)
     if args.evaluate:
         evaluate_and_save(c_matrix)
 
@@ -205,7 +226,8 @@ def Greedy_Decode_Eval(Net, datasets, args):
     t2 = time.time()
     print(f'[Info] Global Char Accuracy:{T_c/t_chars} [{T_c}/{t_chars}] ')
     print(f'[Info] Char Accuracy on full length match:{T_fc/t_fchars} [{T_fc}/{t_fchars}] ')
-    print(f"Length accuracy: {(Tp+Tn_2)/(Tp+Tn_1+Tn_2)}")
+    print(f"[Info] Length accuracy: {(Tp+Tn_2)/(Tp+Tn_1+Tn_2)}")
+    print(f"[Info] Norm_ed: {norm_ed/(Tp+Tn_1+Tn_2)}")
     # print('Per char: ')
     # for i in range(10):
     #     print(i,": ",res_chars[i]/T_c)
