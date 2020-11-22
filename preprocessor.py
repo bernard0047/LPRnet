@@ -14,15 +14,9 @@ from tqdm import tqdm
 
 def get_parser():
     parser = argparse.ArgumentParser(description='parameters for dataset preprocessing')
-<<<<<<< Updated upstream
-    parser.add_argument('--input_dir', default="./IMAGES1/", help='Input path (contains imgfolder and label csv)')
-    parser.add_argument('--resize', default=False,type=bool, help='resize images to 94,24')
-    parser.add_argument('--output_dir', default="./1line/", help='a folder containing train and test folders will be created here') #don't pass for easy training
-=======
     parser.add_argument('--input_dir', default="./images/", help='Input path (contains imgfolder and label csv)')
     parser.add_argument('--resize', default=False,type=bool, help='resize images to 94,24')
     parser.add_argument('--output_dir', default="", help='a folder containing train and test folders will be created here') #don't pass for easy training
->>>>>>> Stashed changes
     parser.add_argument('--verbose',default=False,type=bool,help='Set to true for verbose')
     args = parser.parse_args()
     return args

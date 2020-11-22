@@ -49,30 +49,18 @@ class LPRDataLoader(Dataset):
             # one_hot_base = np.zeros(len(CHARS))
             # one_hot_base[CHARS_DICT[c]] = 1
             label.append(CHARS_DICT[c])
-<<<<<<< Updated upstream
-=======
         #label = label[:10]
->>>>>>> Stashed changes
         label_length = len(label)
         if label_length<9 and index!=len(self.img_paths)-1:
             Image, label, label_length, filename = self.__getitem__(index+1)
         return Image, label, label_length, filename
             
-    
     def transform(self, img):
         img = img.astype('float32')
-<<<<<<< Updated upstream
         #img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         img -= 127.5
         img *= 0.0078125
         #thresh, img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY)
         #img = np.reshape(img, img.shape + (1,))
-=======
-        img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        img -= 127.5
-        img *= 0.0078125
-        #thresh, img = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY)
-        img = np.reshape(img, img.shape + (1,))
->>>>>>> Stashed changes
         img = np.transpose(img, (2, 0, 1))
         return img
