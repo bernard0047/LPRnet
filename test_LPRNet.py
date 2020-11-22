@@ -210,14 +210,6 @@ def Greedy_Decode_Eval(Net, datasets, args):
             if args.save_pred_images:
                 if not os.path.isdir('./testpreds'):
                     os.makedirs('./testpreds')
-<<<<<<< Updated upstream
-                    os.makedirs('./testpreds/images')
-                #newname = 'testpreds/images/'+filenames[X].split('\\')[1].split('.')[0]+"__"+lb+'.png'
-                newname = 'testpreds/images/'+ f'{count}_' + lb + '.png'
-                count+=1
-                #if not correct:
-                shutil.copy(filenames[X],newname)
-=======
                 if not os.path.isdir('./testpreds/images'):
                     os.makedirs('./testpreds/images')
                 newname = 'testpreds/images/'+filenames[X].split('\\')[1].split('.')[0]+"__"+lb+'.png'
@@ -225,7 +217,6 @@ def Greedy_Decode_Eval(Net, datasets, args):
                 count+=1
                 if not correct:
                     shutil.copy(filenames[X],newname)
->>>>>>> Stashed changes
     if args.evaluate:
         evaluate_and_save(c_matrix)
 
