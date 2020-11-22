@@ -29,7 +29,11 @@ import os
 def get_parser():
     parser = argparse.ArgumentParser(description='parameters to train net')
     parser.add_argument('--img_size', default=(94, 24), help='the image size')
+<<<<<<< Updated upstream
     parser.add_argument('--test_img_dirs', default="./images", help='the test images path')
+=======
+    parser.add_argument('--test_img_dirs', default="./images_2/test", help='the test images path')
+>>>>>>> Stashed changes
     parser.add_argument('--dropout_rate', default=0, help='dropout rate.')
     parser.add_argument('--lpr_max_len', default=13, help='license plate number max length.')
     parser.add_argument('--test_batch_size', default=64, help='testing batch size.')
@@ -37,8 +41,13 @@ def get_parser():
     parser.add_argument('--num_workers', default=8, type=int, help='Number of workers used in dataloading')
     parser.add_argument('--cuda', default=True, type=bool, help='Use cuda to train model')
     parser.add_argument('--show', default=False, type=bool, help='show test image and its predict result or not.')
+<<<<<<< Updated upstream
     parser.add_argument('--save_pred_images', default=False, type=bool, help='save testpreds with original label to ./testpreds')
     parser.add_argument('--save_pred_results', default=True, type=bool, help='save preds to preds.csv')
+=======
+    parser.add_argument('--save_pred_images', default=True, type=bool, help='save testpreds with original label to ./testpreds')
+    parser.add_argument('--save_pred_results', default=False, type=bool, help='save preds to preds.csv')
+>>>>>>> Stashed changes
     parser.add_argument('--evaluate', default=False, type=bool, help='Find confusion matrix and classification report and save results')
     parser.add_argument('--pretrained_model', default='./weights/lprnet_weights0.15.pth', help='pretrained base model')
     parser.add_argument('--postprocess', default=False, type=bool, help='Apply postprocessing steps')
@@ -210,12 +219,22 @@ def Greedy_Decode_Eval(Net, datasets, args):
             if args.save_pred_images:
                 if not os.path.isdir('./testpreds'):
                     os.makedirs('./testpreds')
+<<<<<<< Updated upstream
                     os.makedirs('./testpreds/images')
                 #newname = 'testpreds/images/'+filenames[X].split('\\')[1].split('.')[0]+"__"+lb+'.png'
                 newname = 'testpreds/images/'+ f'{count}_' + lb + '.png'
                 count+=1
                 #if not correct:
                 shutil.copy(filenames[X],newname)
+=======
+                if not os.path.isdir('./testpreds/images'):
+                    os.makedirs('./testpreds/images')
+                newname = 'testpreds/images/'+filenames[X].split('\\')[1].split('.')[0]+"__"+lb+'.png'
+                #newname = 'testpreds/images/'+ f'{count}_' + lb + '.png'
+                count+=1
+                if not correct:
+                    shutil.copy(filenames[X],newname)
+>>>>>>> Stashed changes
     if args.evaluate:
         evaluate_and_save(c_matrix)
 
