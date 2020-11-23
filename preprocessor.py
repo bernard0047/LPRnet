@@ -74,11 +74,7 @@ def preprocess():
     allFileNames = os.listdir(imgfolder)
     np.random.shuffle(allFileNames)
     train_FileNames, test_FileNames = np.split(np.array(allFileNames),
-<<<<<<< Updated upstream
-                                                            [int(len(allFileNames)*1)])
-=======
                                                             [int(len(allFileNames)*0.85)])
->>>>>>> Stashed changes
     print('Total images: ', len(allFileNames))
     print('Training: ', len(train_FileNames))
     print('Testing: ', len(test_FileNames))
