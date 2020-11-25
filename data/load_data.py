@@ -1,9 +1,13 @@
 from torch.utils.data import *
 from imutils import paths
+import albumentations as A
+import pandas as pd
 import numpy as np
 import random
 import cv2
 import os
+
+
 
 CHARS = [
          '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -51,11 +55,12 @@ class LPRDataLoader(Dataset):
             label.append(CHARS_DICT[c])
         #label = label[:10]
         label_length = len(label)
-        if label_length<9 and index!=len(self.img_paths)-1:
+        if label_length<8 and index!=len(self.img_paths)-1:
             Image, label, label_length, filename = self.__getitem__(index+1)
         return Image, label, label_length, filename
             
     def transform(self, img):
+        img = self.augs(img)
         img = img.astype('float32')
         #img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         img -= 127.5
@@ -64,3 +69,28 @@ class LPRDataLoader(Dataset):
         #img = np.reshape(img, img.shape + (1,))
         img = np.transpose(img, (2, 0, 1))
         return img
+
+    def augs(self, image):
+        transform = A.Compose([
+        A.OneOf([
+            A.IAAAdditiveGaussianNoise(),
+            A.GaussNoise(),
+        ], p=0.3),
+        A.OneOf([
+            A.MotionBlur(p=.4),
+            A.MedianBlur(blur_limit=3, p=0.3),
+            A.Blur(blur_limit=3, p=0.3),
+        ], p=0.4),
+        A.OneOf([
+            A.CLAHE(clip_limit=2),
+            A.IAASharpen(),
+            A.IAAEmboss(),
+            A.RandomBrightnessContrast(),            
+        ], p=0.3),
+        A.HueSaturationValue(p=0.3),
+        ])
+        image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        augmented_image = transform(image=image)['image']
+        augmented_image = cv2.cvtColor(augmented_image, cv2.COLOR_RGB2BGR)
+        return augmented_image
+            
