@@ -36,3 +36,5 @@ Indian Number Plate Modification LPRNet, A High Performance And Lightweight Lice
 1. [LPRNet: License Plate Recognition via Deep Neural Networks](https://arxiv.org/abs/1806.10447v1)
 2. [PyTorch中文文档](https://pytorch-cn.readthedocs.io/zh/latest/)
 3. [https://github.com/sirius-ai/LPRNet_Pytorch](https://github.com/sirius-ai/LPRNet_Pytorch)
+
+#Swati Gupta
