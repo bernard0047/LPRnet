@@ -2,7 +2,7 @@
 Indian Number Plate Modification LPRNet, A High Performance And Lightweight License Plate Recognition Framework.(Chinese Number Plates Recognition)
 
 ### Dependencies
-
+### edit
 - pytorch >= 1.0.0
 - opencv-python 3.x
 - python 3.x
