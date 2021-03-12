@@ -1,0 +1,113 @@
+dataset:
+  height: 1080
+  width: 1920
+  mean: [0.485, 0.456, 0.406]
+  std: [0.229, 0.224, 0.225]
+  batch_size_pergpu: 16
+  segm_downsampling_rate: 1
+  num_workers: 16
+  augmentation:
+    augmix:
+      val: True
+    cutout:
+      val: False
+    techniques:
+      pixel:
+        RandomBrightnessContrast: True
+        Blur: False
+        OpticalDistortion : False
+        ImageCompression: True
+        MultiplicativeNoise: False
+        IAASharpen: False
+        IAAEmboss: False
+        MotionBlur: True
+        MedianBlur: False
+        GaussNoise: True
+        RandomGamma: False
+        CLAHE: False
+        HueSaturationValue: False
+      spatial:
+        verticalflip: False
+        horizontalflip: True
+        randomcrop: True
+        scale: False
+        scale_factor: 16
+        cropping:
+          width: 960
+          height: 540
+train:
+  accumulation_steps: 1
+  n_epochs: 500
+  gpus: (0,1)
+optimizer:
+  val: "ranger"
+  lr: 0.01
+  weight_decay: 0.0005
+  lrscheduler: 
+    val: 'polylr'
+model:
+  amp: False
+  n_classes: 11
+  decoder: 'C1'
+  backbone: 'hrnetv2'
+  fcdim: 240
+  EXTRA:
+    FINAL_CONV_KERNEL: 1
+    STAGE1:
+      NUM_MODULES: 1
+      NUM_RANCHES: 1
+      BLOCK: BOTTLENECK
+      NUM_BLOCKS:
+      - 1
+      NUM_CHANNELS:
+      - 32
+      FUSE_METHOD: SUM
+    STAGE2:
+      NUM_MODULES: 1
+      NUM_BRANCHES: 2
+      BLOCK: BASIC
+      NUM_BLOCKS:
+      - 2
+      - 2
+      NUM_CHANNELS:
+      - 16
+      - 32
+      FUSE_METHOD: SUM
+    STAGE3:
+      NUM_MODULES: 1
+      NUM_BRANCHES: 3
+      BLOCK: BASIC
+      NUM_BLOCKS:
+      - 2
+      - 2
+      - 2
+      NUM_CHANNELS:
+      - 16
+      - 32
+      - 64
+      FUSE_METHOD: SUM
+    STAGE4:
+      NUM_MODULES: 1
+      NUM_BRANCHES: 4
+      BLOCK: BASIC
+      NUM_BLOCKS:
+      - 2
+      - 2
+      - 2
+      - 2
+      NUM_CHANNELS:
+      - 16
+      - 32
+      - 64
+      - 128
+      FUSE_METHOD: SUM
+    pretrained: ''
+Loss:
+  val: 'ohem'
+  rate: 0.85
+  ignore_label: 255
+  class_weights: [0.1,1,1,1,1,1,1,1,1,1,1]
+valid:
+  frequency: 1
+  val: True
+  write: True
