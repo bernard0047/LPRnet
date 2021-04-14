@@ -20,7 +20,7 @@ Indian Number Plate Modification LPRNet, A High Performance And Lightweight Lice
 | :----: | :----: |
 | xyz.png  | KA00XX0000 |
 
-
+#sukanyawattal
 ### Training and Testing
 
 1. Model only works for size (94,24).
